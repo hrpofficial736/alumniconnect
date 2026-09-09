@@ -21,8 +21,13 @@ import {
   updateAdmin,
   deleteAdmin,
 } from "../controllers/admin/controllers.js";
+import { searchAlumni, searchStudents } from "../controllers/search/controllers.js";
 
 const router = Router();
+
+// search routes
+router.get("/search/alumni", searchAlumni);
+router.get("/search/students", searchStudents);
 
 // student routes
 router.get("/students/get-all", getAllStudents);
