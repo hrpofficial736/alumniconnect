@@ -1,12 +1,11 @@
 import { Router } from "express";
-import { authMiddleware } from "../middleware/authMiddleware.js";
 import {
   getAllStudents,
   getStudentById,
   createStudent,
   updateStudent,
   deleteStudent,
-} from "../controllers/studentController.js";
+} from "../controllers/students/controllers.js";
 
 import {
   getAllAlumni,
@@ -14,35 +13,36 @@ import {
   createAlumni,
   updateAlumni,
   deleteAlumni,
-} from "../controllers/alumniController.js";
+} from "../controllers/alumni/controllers.js";
 
 import {
   getAdminById,
   createAdmin,
   updateAdmin,
   deleteAdmin,
-} from "../controllers/adminController.js";
-
+} from "../controllers/admin/controllers.js";
 
 const router = Router();
 
 // student routes
-router.get("/students/get-all", authMiddleware, getAllStudents);
-router.get("/students/get/:id", authMiddleware, getStudentById);
-router.post("/students/create", authMiddleware, createStudent);
-router.put("/students/update/:id", authMiddleware, updateStudent);
-router.delete("/students/delete/:id", authMiddleware, deleteStudent);
+router.get("/students/get-all", getAllStudents);
+router.get("/students/get/:id", getStudentById);
+router.post("/students/create", createStudent);
+router.put("/students/update/:id", updateStudent);
+router.delete("/students/delete/:id", deleteStudent);
 
 // alumni routes
-router.get("/alumni/get-all", authMiddleware, getAllAlumni);
-router.get("/alumni/get/:id", authMiddleware, getAlumniById);
-router.post("/alumni/create", authMiddleware, createAlumni);
-router.put("/alumni/update/:id", authMiddleware, updateAlumni);
-router.delete("/alumni/delete/:id", authMiddleware, deleteAlumni);
+router.get("/alumni/get-all", getAllAlumni);
+router.get("/alumni/get/:id", getAlumniById);
+router.post("/alumni/create", createAlumni);
+router.put("/alumni/update/:id", updateAlumni);
+router.delete("/alumni/delete/:id", deleteAlumni);
 
 // admin routes
 
-router.get("/admin/get/:id", authMiddleware, getAdminById);
-router.post("/admin/create", authMiddleware, createAdmin);
-router.put("/admin/update/:id", authMiddleware, updateAdmin);
-router.delete("/admin/delete/:id", authMiddleware, deleteAdmin);
+router.get("/admin/get/:id", getAdminById);
+router.post("/admin/create", createAdmin);
+router.put("/admin/update/:id", updateAdmin);
+router.delete("/admin/delete/:id", deleteAdmin);
+
+export default router;

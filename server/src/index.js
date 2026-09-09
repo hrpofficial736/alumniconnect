@@ -1,6 +1,7 @@
 import express from "express";
 import dotenv from "dotenv";
 import { Database } from "./db/setup.js";
+import router from "./routes/routes.js";
 
 const setupServer = async () => {
   dotenv.config();
@@ -29,6 +30,10 @@ const setupServer = async () => {
       res.status(500).json({ ok: false, error: err.message });
     }
   });
+
+  app.use(express.json());
+  app.use(express.urlencoded({ extended: true }));
+  app.use("/api", router);
 
   app.listen(PORT, () => {
     console.log(`server is listening at ${PORT}`);
