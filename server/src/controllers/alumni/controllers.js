@@ -1,4 +1,20 @@
-import {Database} from "../../db/setup.js"
+import { alumni } from "../../../testdata/alumni.js";
+import { Database } from "../../db/setup.js"
+
+const seedAlumni = async (req, res) => {
+  try {
+    const db = new Database(process.env.DATABASE_URL);
+    alumni.forEach(async (alumni) => {
+      const { name, bio, roll_no, age, gender, email, current_company, current_position, batch_year, cgpa, college, skills, portfolio_link, linkedin_link, branch, phone } = alumni;
+      await db.query(`INSERT INTO alumni (name, bio, roll_no, age, gender, email, current_company, current_position, batch_year, cgpa, college, skills, portfolio_link, linkedin_link, branch, phone) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`, [name, bio, roll_no, age, gender, email, current_company, current_position, batch_year, cgpa, college, skills, portfolio_link, linkedin_link, branch, phone]);
+    });
+    console.log("Alumni seeded successfully");
+    res.status(200).json({ message: "Alumni seeded successfully" });
+  } catch (error) {
+    console.error("Error seeding alumni:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
 
 const getAllAlumni = async (req, res) => {
   try {
@@ -81,7 +97,7 @@ const createAlumni = async (req, res) => {
 
 const updateAlumni = async (req, res) => {
   const { id } = req.params;
-  const { 
+  const {
     name,
     bio,
     roll_no,
@@ -98,7 +114,7 @@ const updateAlumni = async (req, res) => {
     linkedin_link,
     branch,
     phone,
-   } = req.body;
+  } = req.body;
   try {
     const db = new Database(process.env.DATABASE_URL);
     const result = await db.query(
@@ -137,6 +153,7 @@ const deleteAlumni = async (req, res) => {
 };
 
 export {
+  seedAlumni,
   getAllAlumni,
   getAlumniById,
   createAlumni,

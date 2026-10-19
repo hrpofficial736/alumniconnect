@@ -2,7 +2,6 @@ import { Database } from "../../db/setup.js";
 
 const searchAlumni = async (req, res) => {
   const { query } = req.query;
-  console.log(query);
   try {
     const db = new Database(process.env.DATABASE_URL);
     const result = await db.query(

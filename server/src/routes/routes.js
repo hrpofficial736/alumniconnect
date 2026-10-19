@@ -5,9 +5,11 @@ import {
   createStudent,
   updateStudent,
   deleteStudent,
+  seedStudents
 } from "../controllers/students/controllers.js";
 
 import {
+  seedAlumni,
   getAllAlumni,
   getAlumniById,
   createAlumni,
@@ -30,24 +32,26 @@ router.get("/search/alumni", searchAlumni);
 router.get("/search/students", searchStudents);
 
 // student routes
-router.get("/students/get-all", getAllStudents);
-router.get("/students/get/:id", getStudentById);
-router.post("/students/create", createStudent);
-router.put("/students/update/:id", updateStudent);
-router.delete("/students/delete/:id", deleteStudent);
+router.post("/students/seed", seedStudents);
+router.get("/students", getAllStudents);
+router.get("/students/:id", getStudentById);
+router.post("/students", createStudent);
+router.patch("/students/:id", updateStudent);
+router.delete("/students/:id", deleteStudent);
 
 // alumni routes
-router.get("/alumni/get-all", getAllAlumni);
-router.get("/alumni/get/:id", getAlumniById);
-router.post("/alumni/create", createAlumni);
-router.put("/alumni/update/:id", updateAlumni);
-router.delete("/alumni/delete/:id", deleteAlumni);
+router.post("/alumni/seed", seedAlumni);
+router.get("/alumni", getAllAlumni);
+router.get("/alumni/:id", getAlumniById);
+router.post("/alumni", createAlumni);
+router.patch("/alumni/:id", updateAlumni);
+router.delete("/alumni/:id", deleteAlumni);
 
 // admin routes
 
-router.get("/admin/get/:id", getAdminById);
-router.post("/admin/create", createAdmin);
-router.put("/admin/update/:id", updateAdmin);
-router.delete("/admin/delete/:id", deleteAdmin);
+router.get("/admin/:id", getAdminById);
+router.post("/admin", createAdmin);
+router.patch("/admin/:id", updateAdmin);
+router.delete("/admin/:id", deleteAdmin);
 
 export default router;

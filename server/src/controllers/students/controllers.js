@@ -1,7 +1,40 @@
+import { students } from "../../../testdata/students.js";
 import { Database } from "../../db/setup.js";
+
+const seedStudents = async (req, res) => {
+  try {
+    const db = new Database(process.env.DATABASE_URL);
+    students.forEach(async (student) => {
+      await db.query("INSERT INTO students (name, bio, age, gender, semester, cgpa, college, roll_no, email, branch, batch_year, phone, skills, portfolio_link, linkedin_link) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)", [
+        student.name,
+        student.bio,
+        student.age,
+        student.gender,
+        student.semester,
+        student.cgpa,
+        student.college,
+        student.roll_no,
+        student.email,
+        student.branch,
+        student.batch_year,
+        student.phone,
+        student.skills,
+        student.portfolio_link,
+        student.linkedin_link,
+      ]);
+    });
+  
+    console.log("students seeded");
+    res.status(200).json({ message: "students seeded" });
+  } catch (error) {
+    console.error("Error seeding students:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
 
 const getAllStudents = async (req, res) => {
   try {
+    console.log("aaya")
     const db = new Database(process.env.DATABASE_URL);
     const result = await db.query("SELECT * FROM students");
     res.status(200).json(result);
@@ -111,6 +144,7 @@ const deleteStudent = async (req, res) => {
 };
 
 export {
+  seedStudents,
   getAllStudents,
   getStudentById,
   createStudent,
