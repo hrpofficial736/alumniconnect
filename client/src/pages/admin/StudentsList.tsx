@@ -1,8 +1,10 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useUser } from '@clerk/react'
 import { Sidebar } from '../../components/Sidebar'
-import { useGetAllStudents } from '../../hooks/use-students'
-import { FaSearch, FaExternalLinkAlt } from 'react-icons/fa'
+import { useGetAllStudents, useSeedStudents } from '../../hooks/use-students'
+import type { Student } from '../../types/types'
+import { FaSearch, FaExternalLinkAlt, FaUpload } from 'react-icons/fa'
+import { useParams } from 'react-router'
 
 const CGPA_COLOR = (cgpa: number) => {
   if (cgpa >= 8.5) return 'text-emerald-600 bg-emerald-50'
@@ -14,11 +16,32 @@ export const StudentsList = () => {
   const { user } = useUser()
   const userName = user?.firstName ?? user?.emailAddresses[0]?.emailAddress ?? 'Admin'
 
+  const { adminId = '' } = useParams()
   const { data: students, isLoading, isError } = useGetAllStudents()
-
-  console.log(students)
-
+  const { mutate: seed, isPending: seeding } = useSeedStudents(adminId)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [search, setSearch] = useState('')
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log("File change event triggered")
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      try {
+        console.log(JSON.parse(ev.target?.result as string))
+        // Parse the JSON string into an array of Student objects
+        const data = JSON.parse(ev.target?.result as string) as Student[]
+        console.log(data)
+        seed(data)
+      } catch (e) {
+        console.error(e)
+        alert('Invalid JSON file.')
+      }
+    }
+    reader.readAsText(file)
+    e.target.value = ''
+  }
 
   const filtered = (students ?? []).filter((s) => {
     const q = search.toLowerCase()
@@ -32,7 +55,7 @@ export const StudentsList = () => {
 
   return (
     <div className="flex h-screen bg-[#fbfaf6]">
-      <Sidebar role="admin" userName={userName} />
+      <Sidebar role="admin" id={adminId} userName={userName} />
 
       <main className="flex-1 flex flex-col overflow-hidden px-6 py-8 sm:px-10">
         {/* Header */}
@@ -55,6 +78,19 @@ export const StudentsList = () => {
               className="w-full rounded-xl border border-[#dce5d8] bg-white py-2.5 pl-9 pr-4 text-sm text-[#23392f] outline-none transition placeholder:text-[#98a59a] focus:border-[#24543f]"
             />
           </div>
+        </div>
+
+        <div className="mb-3 flex justify-end">
+          <input ref={fileInputRef} type="file" accept=".json" className="hidden" onChange={handleFileChange} />
+          <button
+            type="button"
+            disabled={seeding}
+            onClick={() => fileInputRef.current?.click()}
+            className="flex cursor-pointer items-center gap-2 rounded-xl bg-[#24543f] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[#1d4332] disabled:opacity-60"
+          >
+            <FaUpload className="text-xs" />
+            {seeding ? 'Seeding…' : 'Seed JSON data'}
+          </button>
         </div>
 
         {/* Table container */}

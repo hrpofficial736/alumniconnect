@@ -1,31 +1,19 @@
-import { students } from "../../../testdata/students.js";
 import { Database } from "../../db/setup.js";
 
 const seedStudents = async (req, res) => {
+  const students = req.body;
+  if (!Array.isArray(students) || students.length === 0) {
+    return res.status(400).json({ error: "Request body must be a non-empty array of students" });
+  }
   try {
     const db = new Database(process.env.DATABASE_URL);
-    students.forEach(async (student) => {
-      await db.query("INSERT INTO students (name, bio, age, gender, semester, cgpa, college, roll_no, email, branch, batch_year, phone, skills, portfolio_link, linkedin_link) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)", [
-        student.name,
-        student.bio,
-        student.age,
-        student.gender,
-        student.semester,
-        student.cgpa,
-        student.college,
-        student.roll_no,
-        student.email,
-        student.branch,
-        student.batch_year,
-        student.phone,
-        student.skills,
-        student.portfolio_link,
-        student.linkedin_link,
-      ]);
-    });
-  
-    console.log("students seeded");
-    res.status(200).json({ message: "students seeded" });
+    for (const s of students) {
+      await db.query(
+        "INSERT INTO students (id, name, bio, age, gender, semester, cgpa, college, roll_no, email, branch, batch_year, phone, skills, portfolio_link, linkedin_link) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)",
+        [s.id, s.name, s.bio, s.age, s.gender, s.semester, s.cgpa, s.college, s.roll_no, s.email, s.branch, s.batch_year, s.phone, s.skills, s.portfolio_link, s.linkedin_link]
+      );
+    }
+    res.status(201).json({ message: `${students.length} student(s) seeded successfully` });
   } catch (error) {
     console.error("Error seeding students:", error);
     res.status(500).json({ error: "Internal Server Error" });
@@ -34,7 +22,6 @@ const seedStudents = async (req, res) => {
 
 const getAllStudents = async (req, res) => {
   try {
-    console.log("aaya")
     const db = new Database(process.env.DATABASE_URL);
     const result = await db.query("SELECT * FROM students");
     res.status(200).json(result);
@@ -60,30 +47,14 @@ const getStudentById = async (req, res) => {
 };
 
 const createStudent = async (req, res) => {
-  const {
-    name,
-    bio,
-    age,
-    gender,
-    semester,
-    cgpa,
-    college,
-    roll_no,
-    email,
-    branch,
-    batch_year,
-    phone,
-    skills,
-    portfolio_link,
-    linkedin_link,
-  } = req.body;
+  const { id, name, bio, age, gender, semester, cgpa, college, roll_no, email, branch, batch_year, phone, skills, portfolio_link, linkedin_link } = req.body;
   try {
     const db = new Database(process.env.DATABASE_URL);
     const result = await db.query(
-      "INSERT INTO students (name, bio, age, gender, semester, cgpa, college, roll_no, email, branch, batch_year, phone, skills, portfolio_link, linkedin_link) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) RETURNING *",
-      [name, bio, age, gender, semester, cgpa, college, roll_no, email, branch, batch_year, phone, skills, portfolio_link, linkedin_link],
+      "INSERT INTO students (id, name, bio, age, gender, semester, cgpa, college, roll_no, email, branch, batch_year, phone, skills, portfolio_link, linkedin_link) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) RETURNING *",
+      [id, name, bio, age, gender, semester, cgpa, college, roll_no, email, branch, batch_year, phone, skills, portfolio_link, linkedin_link]
     );
-    res.status(201).json(result);
+    res.status(201).json(result[0]);
   } catch (error) {
     console.error("Error creating student:", error);
     res.status(500).json({ error: "Internal Server Error" });
@@ -92,32 +63,14 @@ const createStudent = async (req, res) => {
 
 const updateStudent = async (req, res) => {
   const { id } = req.params;
-  const {
-    name,
-    bio,
-    age,
-    gender,
-    semester,
-    cgpa,
-    college,
-    roll_no,
-    email,
-    branch,
-    batch_year,
-    phone,
-    skills,
-    portfolio_link,
-    linkedin_link,
-  } = req.body;
+  const { name, bio, age, gender, semester, cgpa, college, roll_no, email, branch, batch_year, phone, skills, portfolio_link, linkedin_link } = req.body;
   try {
     const db = new Database(process.env.DATABASE_URL);
     const result = await db.query(
-      "UPDATE students SET name = $1, bio = $2, age = $3, gender = $4, semester = $5, cgpa = $6, college = $7, roll_no = $8, email = $9, branch = $10, batch_year = $11, phone = $12, skills = $13, portfolio_link = $14, linkedin_link = $15 WHERE id = $16 RETURNING *",
-      [name, bio, age, gender, semester, cgpa, college, roll_no, email, branch, batch_year, phone, skills, portfolio_link, linkedin_link, id],
+      "UPDATE students SET name=$1, bio=$2, age=$3, gender=$4, semester=$5, cgpa=$6, college=$7, roll_no=$8, email=$9, branch=$10, batch_year=$11, phone=$12, skills=$13, portfolio_link=$14, linkedin_link=$15 WHERE id=$16 RETURNING *",
+      [name, bio, age, gender, semester, cgpa, college, roll_no, email, branch, batch_year, phone, skills, portfolio_link, linkedin_link, id]
     );
-    if (result.length === 0) {
-      return res.status(404).json({ error: "Student not found" });
-    }
+    if (result.length === 0) return res.status(404).json({ error: "Student not found" });
     res.status(200).json(result[0]);
   } catch (error) {
     console.error(`Error updating student with ID ${id}:`, error);
@@ -129,13 +82,8 @@ const deleteStudent = async (req, res) => {
   const { id } = req.params;
   try {
     const db = new Database(process.env.DATABASE_URL);
-    const result = await db.query(
-      "DELETE FROM students WHERE id = $1 RETURNING *",
-      [id],
-    );
-    if (result.length === 0) {
-      return res.status(404).json({ error: "Student not found" });
-    }
+    const result = await db.query("DELETE FROM students WHERE id=$1 RETURNING *", [id]);
+    if (result.length === 0) return res.status(404).json({ error: "Student not found" });
     res.json({ message: "Student deleted successfully" });
   } catch (error) {
     console.error(`Error deleting student with ID ${id}:`, error);
@@ -143,11 +91,4 @@ const deleteStudent = async (req, res) => {
   }
 };
 
-export {
-  seedStudents,
-  getAllStudents,
-  getStudentById,
-  createStudent,
-  updateStudent,
-  deleteStudent,
-};
+export { seedStudents, getAllStudents, getStudentById, createStudent, updateStudent, deleteStudent };

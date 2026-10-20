@@ -1,6 +1,6 @@
 import { useAuth } from "@clerk/react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createAlumni, deleteAlumni, getAllAlumni, getAlumniByID, updateAlumni } from "../api/alumni";
+import { createAlumni, deleteAlumni, getAllAlumni, getAlumniByID, seedAlumni, updateAlumni } from "../api/alumni";
 import type { Alumni } from "../types/types";
 
 export function useGetAllAlumni() {
@@ -57,6 +57,21 @@ export function useUpdateAlumni(data: Alumni, id: string) {
       queryClient.invalidateQueries({ queryKey: ["alumni"] })
     }
   })
+}
+
+export function useSeedAlumni(adminId: string) {
+  const { getToken } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: Alumni[]) => {
+      const token = await getToken();
+      return seedAlumni(token!, adminId, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["alumni"] });
+    }
+  });
 }
 
 export function useDeleteAlumni(id: string) {

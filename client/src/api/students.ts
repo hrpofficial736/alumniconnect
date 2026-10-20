@@ -17,6 +17,10 @@ export function updateStudent(token: string, data: Student, id: string) {
   return apiClient<Student>(`students/${id}`, "PATCH", token, data);
 }
 
+export function seedStudents(token: string, adminId: string, data: Student[]) {
+  return apiClient<{ message: string }>(`admin/${adminId}/seed/students`, "POST", token, data);
+}
+
 export function deleteStudent(token: string, id: string) {
   return apiClient<void>(`students/${id}`, "DELETE", token, undefined);
 }

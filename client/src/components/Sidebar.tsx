@@ -6,30 +6,28 @@ import {
   FaUserGraduate,
   FaBriefcase,
   FaSearch,
-  FaChartBar,
   FaSignOutAlt,
 } from 'react-icons/fa'
 
 type UserRole = 'student' | 'alumni' | 'admin'
 
-const navItems: Record<UserRole, { to: string; icon: React.ReactNode; label: string }[]> = {
+const getNavItems = (role: UserRole, id: string) => ({
   student: [
-    { to: '/dashboard', icon: <FaHome />, label: 'Overview' },
-    { to: '/dashboard/alumni', icon: <FaSearch />, label: 'Browse Alumni' },
-    { to: '/dashboard/profile', icon: <FaUserGraduate />, label: 'My Profile' },
+    { to: `/dashboard/students/${id}`, icon: <FaHome />, label: 'Overview' },
+    { to: `/dashboard/students/${id}/alumni`, icon: <FaSearch />, label: 'Browse Alumni' },
+    { to: `/dashboard/students/${id}/profile`, icon: <FaUserGraduate />, label: 'My Profile' },
   ],
   alumni: [
-    { to: '/dashboard', icon: <FaHome />, label: 'Overview' },
-    { to: '/dashboard/students', icon: <FaSearch />, label: 'Browse Students' },
-    { to: '/dashboard/profile', icon: <FaBriefcase />, label: 'My Profile' },
+    { to: `/dashboard/alumni/${id}`, icon: <FaHome />, label: 'Overview' },
+    { to: `/dashboard/alumni/${id}/students`, icon: <FaSearch />, label: 'Browse Students' },
+    { to: `/dashboard/alumni/${id}/profile`, icon: <FaBriefcase />, label: 'My Profile' },
   ],
   admin: [
-    { to: '/dashboard', icon: <FaHome />, label: 'Overview' },
-    { to: '/dashboard/students', icon: <FaUserGraduate />, label: 'Students' },
-    { to: '/dashboard/alumni', icon: <FaUsers />, label: 'Alumni' },
-    { to: '/dashboard/reports', icon: <FaChartBar />, label: 'Reports' },
+    { to: `/dashboard/admin/${id}`, icon: <FaHome />, label: 'Overview' },
+    { to: `/dashboard/admin/${id}/students`, icon: <FaUserGraduate />, label: 'Students' },
+    { to: `/dashboard/admin/${id}/alumni`, icon: <FaUsers />, label: 'Alumni' },
   ],
-}
+}[role])
 
 const roleLabel: Record<UserRole, string> = {
   student: 'Student',
@@ -39,10 +37,11 @@ const roleLabel: Record<UserRole, string> = {
 
 interface SidebarProps {
   role: UserRole
+  id: string
   userName: string
 }
 
-export const Sidebar = ({ role, userName }: SidebarProps) => {
+export const Sidebar = ({ role, id, userName }: SidebarProps) => {
   const { signOut } = useClerk()
 
   return (
@@ -60,7 +59,7 @@ export const Sidebar = ({ role, userName }: SidebarProps) => {
 
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
-        {navItems[role].map((item) => (
+        {getNavItems(role, id).map((item) => (
           <NavLink
             key={item.to}
             to={item.to}

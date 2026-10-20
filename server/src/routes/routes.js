@@ -53,5 +53,8 @@ router.get("/admin/:id", getAdminById);
 router.post("/admin", createAdmin);
 router.patch("/admin/:id", updateAdmin);
 router.delete("/admin/:id", deleteAdmin);
+router.post("/admin/:id/seed/students", seedStudents);
+router.post("/admin/:id/seed/alumni", seedAlumni);
+
 
 export default router;

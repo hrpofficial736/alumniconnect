@@ -16,3 +16,12 @@ export function updateAdmin(token: string, data: Admin, id: string) {
 export function deleteAdmin(token: string, id: string) {
   return apiClient<void>(`admin/${id}`, "DELETE", token, undefined);
 }
+
+export function seedStudents(token: string, id: string, data: unknown) {
+  return apiClient<void>(`admin/${id}/seed/students`, "POST", token, data);
+}
+
+
+export function seedAlumni(token: string, id: string, data: unknown) {
+  return apiClient<void>(`admin/${id}/seed/alumni`, "POST", token, data);
+}

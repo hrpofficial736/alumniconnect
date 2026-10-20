@@ -1,4 +1,5 @@
 import { useUser } from '@clerk/react'
+import { useParams } from 'react-router'
 import { Sidebar } from '../components/Sidebar'
 import { useGetAllStudents } from '../hooks/use-students'
 import { useGetAllAlumni } from '../hooks/use-alumni'
@@ -118,7 +119,6 @@ const AdminContent = () => {
       <QuickLinks links={[
         { label: 'Manage Students', description: 'View, add, edit or remove student records.', to: '/dashboard/students' },
         { label: 'Manage Alumni', description: 'Oversee alumni profiles and verifications.', to: '/dashboard/alumni' },
-        { label: 'Reports', description: 'Generate institutional analytics and reports.', to: '/dashboard/reports' },
       ]} />
     </>
   )
@@ -134,6 +134,7 @@ const headings: Record<UserRole, { greeting: string; description: string }> = {
 
 export const DashboardPage = () => {
   const { user, isLoaded } = useUser()
+  const { studentId, alumniId, adminId } = useParams()
 
   if (!isLoaded) {
     return (
@@ -143,13 +144,14 @@ export const DashboardPage = () => {
     )
   }
 
+  const id = studentId ?? alumniId ?? adminId ?? ''
   const role = (user?.unsafeMetadata?.role as UserRole) ?? 'student'
   const userName = user?.firstName ?? user?.emailAddresses[0]?.emailAddress ?? 'User'
   const { greeting, description } = headings[role]
 
   return (
     <div className="flex h-screen bg-[#fbfaf6]">
-      <Sidebar role={role} userName={userName} />
+      <Sidebar role={role} id={id} userName={userName} />
 
       <main className="flex-1 overflow-y-auto px-6 py-8 sm:px-10">
         <div className="mb-8">
