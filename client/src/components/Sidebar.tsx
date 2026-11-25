@@ -1,5 +1,4 @@
-import { NavLink } from 'react-router'
-import { useClerk } from '@clerk/react'
+import { NavLink } from "react-router";
 import {
   FaHome,
   FaUsers,
@@ -7,42 +6,89 @@ import {
   FaBriefcase,
   FaSearch,
   FaSignOutAlt,
-} from 'react-icons/fa'
+  FaUserFriends,
+  FaEnvelope,
+} from "react-icons/fa";
 
-type UserRole = 'student' | 'alumni' | 'admin'
+type UserRole = "student" | "alumni" | "admin";
 
-const getNavItems = (role: UserRole, id: string) => ({
-  student: [
-    { to: `/dashboard/students/${id}`, icon: <FaHome />, label: 'Overview' },
-    { to: `/dashboard/students/${id}/alumni`, icon: <FaSearch />, label: 'Browse Alumni' },
-    { to: `/dashboard/students/${id}/profile`, icon: <FaUserGraduate />, label: 'My Profile' },
-  ],
-  alumni: [
-    { to: `/dashboard/alumni/${id}`, icon: <FaHome />, label: 'Overview' },
-    { to: `/dashboard/alumni/${id}/students`, icon: <FaSearch />, label: 'Browse Students' },
-    { to: `/dashboard/alumni/${id}/profile`, icon: <FaBriefcase />, label: 'My Profile' },
-  ],
-  admin: [
-    { to: `/dashboard/admin/${id}`, icon: <FaHome />, label: 'Overview' },
-    { to: `/dashboard/admin/${id}/students`, icon: <FaUserGraduate />, label: 'Students' },
-    { to: `/dashboard/admin/${id}/alumni`, icon: <FaUsers />, label: 'Alumni' },
-  ],
-}[role])
+const getNavItems = (role: UserRole, id: string) =>
+  ({
+    student: [
+      { to: `/dashboard/student/${id}`, icon: <FaHome />, label: "Overview" },
+      {
+        to: `/dashboard/student/${id}/alumni`,
+        icon: <FaSearch />,
+        label: "Browse Alumni",
+      },
+      {
+        to: `/dashboard/student/${id}/profile`,
+        icon: <FaUserGraduate />,
+        label: "My Profile",
+      },
+      {
+        to: `/dashboard/student/${id}/mentors`,
+        icon: <FaBriefcase />,
+        label: "My Mentors",
+      },
+      {
+        to: `/dashboard/student/${id}/requests`,
+        icon: <FaUserFriends />,
+        label: "My Requests",
+      },
+    ],
+    alumni: [
+      { to: `/dashboard/alumni/${id}`, icon: <FaHome />, label: "Overview" },
+      {
+        to: `/dashboard/alumni/${id}/students`,
+        icon: <FaSearch />,
+        label: "Browse Students",
+      },
+      {
+        to: `/dashboard/alumni/${id}/profile`,
+        icon: <FaBriefcase />,
+        label: "My Profile",
+      },
+      {
+        to: `/dashboard/alumni/${id}/mentorship-requests`,
+        icon: <FaSearch />,
+        label: "Mentorship Requests",
+      },
+      {
+        to: `/dashboard/alumni/${id}/mail`,
+        icon: <FaEnvelope />,
+        label: "Mail",
+      },
+    ],
+    admin: [
+      { to: `/dashboard/admin/${id}`, icon: <FaHome />, label: "Overview" },
+      {
+        to: `/dashboard/admin/${id}/students`,
+        icon: <FaUserGraduate />,
+        label: "Students",
+      },
+      {
+        to: `/dashboard/admin/${id}/alumni`,
+        icon: <FaUsers />,
+        label: "Alumni",
+      },
+    ],
+  })[role];
 
 const roleLabel: Record<UserRole, string> = {
-  student: 'Student',
-  alumni: 'Alumni',
-  admin: 'Admin',
-}
+  student: "Student",
+  alumni: "Alumni",
+  admin: "Admin",
+};
 
 interface SidebarProps {
-  role: UserRole
-  id: string
-  userName: string
+  role: UserRole;
+  id: string;
+  userEmail: string;
 }
 
-export const Sidebar = ({ role, id, userName }: SidebarProps) => {
-  const { signOut } = useClerk()
+export const Sidebar = ({ role, id, userEmail }: SidebarProps) => {
+  console.log(role, id, userEmail);
 
   return (
     <aside className="flex h-screen w-60 flex-col border-r border-[#e3eadf] bg-white">
@@ -63,11 +109,12 @@ export const Sidebar = ({ role, id, userName }: SidebarProps) => {
           <NavLink
             key={item.to}
             to={item.to}
-            end={item.to === '/dashboard'}
+            end
             className={({ isActive }) =>
-              `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${isActive
-                ? 'bg-[#e8f0e8] text-[#24543f]'
-                : 'text-[#66746a] hover:bg-[#f4f7f2] hover:text-[#23392f]'
+              `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
+                isActive
+                  ? "bg-[#e8f0e8] text-[#24543f]"
+                  : "text-[#66746a] hover:bg-[#f4f7f2] hover:text-[#23392f]"
               }`
             }
           >
@@ -81,15 +128,17 @@ export const Sidebar = ({ role, id, userName }: SidebarProps) => {
       <div className="border-t border-[#e3eadf] px-4 py-4">
         <div className="flex items-center gap-3">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#e8f0e8] text-sm font-semibold text-[#24543f]">
-            {userName.charAt(0).toUpperCase()}
+            {userEmail.charAt(0).toUpperCase()}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium text-[#23392f]">{userName}</p>
+            <p className="truncate text-sm font-medium text-[#23392f]">
+              {userEmail}
+            </p>
             <p className="text-xs text-[#66746a]">{roleLabel[role]}</p>
           </div>
           <button
             type="button"
-            onClick={() => signOut()}
+            onClick={() => localStorage.removeItem("user")}
             title="Sign out"
             className="cursor-pointer rounded-lg p-1.5 text-[#97a398] transition hover:bg-[#f4f7f2] hover:text-[#23392f]"
           >
@@ -98,5 +147,5 @@ export const Sidebar = ({ role, id, userName }: SidebarProps) => {
         </div>
       </div>
     </aside>
-  )
-}
+  );
+};

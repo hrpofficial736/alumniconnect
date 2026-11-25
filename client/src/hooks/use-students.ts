@@ -1,93 +1,90 @@
-import { useAuth } from "@clerk/react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createStudent, deleteStudent, getAllStudents, getStudentByID, seedStudents, updateStudent } from "../api/students";
+import {
+  deleteStudent,
+  getAllStudents,
+  getStudentByID,
+  getStudentProfile,
+  seedStudents,
+  updateStudent,
+  updateStudentProfile,
+} from "../api/students";
 import type { Student } from "../types/types";
 
 export function useGetAllStudents() {
-  const { getToken } = useAuth();
-
   return useQuery({
     queryKey: ["student"],
     queryFn: async () => {
-      const token = await getToken();
-      const students = getAllStudents(token!);
-      console.log(students)
+      const students = getAllStudents();
+      console.log(students);
       return students;
-    }
-  })
+    },
+  });
 }
 
 export function useGetStudentByID(id: string) {
-  const { getToken } = useAuth();
-
   return useQuery({
-    queryKey: ["student"],
-    queryFn: async () => {
-      const token = await getToken();
-      return getStudentByID(token!, id);
-    }
-  })
+    queryKey: ["student", id],
+    enabled: !!id,
+    queryFn: () => getStudentByID(id),
+  });
 }
 
-export function useCreateStudent(data: Student) {
-  const { getToken } = useAuth();
+export function useGetStudentProfile(id: string) {
+  return useQuery({
+    queryKey: ["student-profile", id],
+    enabled: !!id,
+    queryFn: () => getStudentProfile(id),
+  });
+}
 
+export function useUpdateStudentProfile(id: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async () => {
-      const token = await getToken();
-      return createStudent(token!, data)
+    mutationFn: (data: Omit<Student, "password">) =>
+      updateStudentProfile(data, id),
+    onSuccess: (profile) => {
+      queryClient.setQueryData(["student-profile", id], profile);
+      queryClient.setQueryData(["student", id], profile);
+      queryClient.invalidateQueries({ queryKey: ["student"] });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["student"] })
-    }
-  })
+  });
 }
 
-export function useUpdateStudent(data: Student, id: string) {
-  const { getToken } = useAuth();
-
+export function useUpdateStudent(id: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async () => {
-      const token = await getToken();
-      return updateStudent(token!, data, id)
+    mutationFn: (data: Omit<Student, "password">) => updateStudent(data, id),
+    onSuccess: (student) => {
+      queryClient.setQueryData(["student", id], student);
+      queryClient.invalidateQueries({ queryKey: ["student"] });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["student"] })
-    }
-  })
+  });
 }
 
 export function useSeedStudents(adminId: string) {
-  const { getToken } = useAuth();
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (data: Student[]) => {
-      const token = await getToken();
-      return seedStudents(token!, adminId, data);
+      return seedStudents(adminId, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["student"] });
-    }
+    },
   });
 }
 
 export function useDeleteStudent(id: string) {
-  const { getToken } = useAuth();
-
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async () => {
-      const token = await getToken();
-      return deleteStudent(token!, id)
+      return deleteStudent(id);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["student"] })
-    }
-  })
+      queryClient.invalidateQueries({ queryKey: ["student"] });
+    },
+  });
 }

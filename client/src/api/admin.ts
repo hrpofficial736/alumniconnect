@@ -1,27 +1,28 @@
 import type { Admin } from "../types/types";
 import { apiClient } from "./client";
 
-export function getAdminByID(token: string, id: string) {
-  return apiClient<Admin>(`admin/${id}`, "GET", token, undefined);
-}
-
-export function createAdmin(token: string, data: Admin) {
-  return apiClient<Admin>("admin", "POST", token, data);
-}
-
-export function updateAdmin(token: string, data: Admin, id: string) {
-  return apiClient<Admin>(`admin/${id}`, "PATCH", token, data);
-}
-
-export function deleteAdmin(token: string, id: string) {
-  return apiClient<void>(`admin/${id}`, "DELETE", token, undefined);
-}
-
-export function seedStudents(token: string, id: string, data: unknown) {
-  return apiClient<void>(`admin/${id}/seed/students`, "POST", token, data);
+export function getAdminByID(id: string) {
+  return apiClient<Admin>(`admin/${id}`, "GET", null, undefined);
 }
 
 
-export function seedAlumni(token: string, id: string, data: unknown) {
-  return apiClient<void>(`admin/${id}/seed/alumni`, "POST", token, data);
+export function updateAdmin(data: Admin, id: string) {
+  return apiClient<Admin>(`admin/${id}`, "PATCH", null, data);
+}
+
+export function deleteAdmin(id: string) {
+  return apiClient<void>(`admin/${id}`, "DELETE", null, undefined);
+}
+
+export function seedStudents(id: string, data: unknown) {
+  return apiClient<void>(`admin/${id}/seed/students`, "POST", null, data);
+}
+
+
+export function seedAlumni(id: string, data: unknown) {
+  return apiClient<void>(`admin/${id}/seed/alumni`, "POST", null, data);
+}
+
+export function updateStudents(id: string) {
+  return apiClient<void>(`admin/${id}/update/students`, "POST", null);
 }

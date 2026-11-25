@@ -1,10 +1,11 @@
 import { useRef, useState } from 'react'
-import { useUser } from '@clerk/react'
 import { Sidebar } from '../../components/Sidebar'
 import { useGetAllStudents, useSeedStudents } from '../../hooks/use-students'
 import type { Student } from '../../types/types'
 import { FaSearch, FaExternalLinkAlt, FaUpload } from 'react-icons/fa'
 import { useParams } from 'react-router'
+import { Filters, type FilterValues } from '../../components/Filters'
+import { useUpdateStudents } from '../../hooks/use-admin'
 
 const CGPA_COLOR = (cgpa: number) => {
   if (cgpa >= 8.5) return 'text-emerald-600 bg-emerald-50'
@@ -13,8 +14,8 @@ const CGPA_COLOR = (cgpa: number) => {
 }
 
 export const StudentsList = () => {
-  const { user } = useUser()
-  const userName = user?.firstName ?? user?.emailAddresses[0]?.emailAddress ?? 'Admin'
+  const user = JSON.parse(localStorage.getItem('user') ?? '{}')
+  const userEmail = user.email ?? 'Admin'
 
   const { adminId = '' } = useParams()
   const { data: students, isLoading, isError } = useGetAllStudents()
@@ -43,19 +44,24 @@ export const StudentsList = () => {
     e.target.value = ''
   }
 
-  const filtered = (students ?? []).filter((s) => {
-    const q = search.toLowerCase()
-    return (
-      s.name.toLowerCase().includes(q) ||
-      s.roll_no.toLowerCase().includes(q) ||
-      s.branch.toLowerCase().includes(q) ||
-      s.email.toLowerCase().includes(q)
-    )
+  const [filters, setFilters] = useState<FilterValues>({ skill: '' })
+  const q = search.trim().toLowerCase()
+  const skill = filters.skill.trim().toLowerCase()
+  const studentsList = (students ?? []).filter((a) => {
+    const matchesSearch = [a.name, a.roll_no, a.branch, a.email, a.college]
+      .some((value) => value?.toLowerCase().includes(q))
+
+    return matchesSearch &&
+      (filters.batch_year === undefined || Number(a.batch_year) === filters.batch_year) &&
+      (filters.cgpa === undefined || Number(a.cgpa) > filters.cgpa) &&
+      (!skill || a.skills.some((value) => value.trim().toLowerCase() === skill))
   })
+
+  const { mutate: updateStudentsList, isPending: updating } = useUpdateStudents(adminId)
 
   return (
     <div className="flex h-screen bg-[#fbfaf6]">
-      <Sidebar role="admin" id={adminId} userName={userName} />
+      <Sidebar role="admin" id={adminId} userEmail={userEmail} />
 
       <main className="flex-1 flex flex-col overflow-hidden px-6 py-8 sm:px-10">
         {/* Header */}
@@ -63,7 +69,7 @@ export const StudentsList = () => {
           <div>
             <h1 className="text-2xl font-semibold text-[#23392f]">Students</h1>
             <p className="mt-0.5 text-sm text-[#66746a]">
-              {isLoading ? 'Loading…' : `${filtered.length} student${filtered.length !== 1 ? 's' : ''} found`}
+              {isLoading ? 'Loading…' : `${studentsList.length} student${studentsList.length !== 1 ? 's' : ''} found`}
             </p>
           </div>
 
@@ -80,7 +86,11 @@ export const StudentsList = () => {
           </div>
         </div>
 
-        <div className="mb-3 flex justify-end">
+        <div className="mb-3 flex justify-end gap-3">
+          <button onClick={() => updateStudentsList()}
+            className={`flex cursor-pointer items-center gap-2 rounded-xl bg-[#24543f] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[#1d4332] disabled:opacity-60 ${updating ? 'opacity-60' : ''}`}>
+            {updating ? 'Updating...' : 'Update Students'}
+          </button>
           <input ref={fileInputRef} type="file" accept=".json" className="hidden" onChange={handleFileChange} />
           <button
             type="button"
@@ -92,6 +102,8 @@ export const StudentsList = () => {
             {seeding ? 'Seeding…' : 'Seed JSON data'}
           </button>
         </div>
+
+        <Filters search={setFilters} />
 
         {/* Table container */}
         <div className="flex-1 overflow-auto rounded-2xl border border-[#e3eadf] bg-white shadow-[0_4px_16px_rgba(23,61,45,0.05)]">
@@ -124,14 +136,14 @@ export const StudentsList = () => {
               </thead>
 
               <tbody className="divide-y divide-[#f0f4ec]">
-                {filtered.length === 0 ? (
+                {studentsList.length === 0 ? (
                   <tr>
                     <td colSpan={8} className="py-16 text-center text-[#97a398]">
                       No students match your search.
                     </td>
                   </tr>
                 ) : (
-                  filtered.map((student, i) => (
+                  studentsList.map((student, i) => (
                     <tr
                       key={student.roll_no ?? i}
                       className="transition hover:bg-[#f7faf5]"

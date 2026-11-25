@@ -1,10 +1,10 @@
 import { useRef, useState } from 'react'
-import { useUser } from '@clerk/react'
 import { Sidebar } from '../../components/Sidebar'
 import { useGetAllAlumni, useSeedAlumni } from '../../hooks/use-alumni'
 import type { Alumni } from '../../types/types'
 import { FaSearch, FaExternalLinkAlt, FaUpload } from 'react-icons/fa'
 import { useParams } from 'react-router'
+import { Filters, type FilterValues } from '../../components/Filters'
 
 const CGPA_COLOR = (cgpa: number) => {
   if (cgpa >= 8.5) return 'text-emerald-600 bg-emerald-50'
@@ -13,15 +13,17 @@ const CGPA_COLOR = (cgpa: number) => {
 }
 
 export const AlumniList = () => {
-  const { user } = useUser()
-  const userName = user?.firstName ?? user?.emailAddresses[0]?.emailAddress ?? 'Admin'
+  const user = JSON.parse(localStorage.getItem('user') ?? '{}')
+  const userEmail = user.email ?? 'Admin'
 
   const { adminId = '' } = useParams()
 
   const { data: alumni, isLoading, isError } = useGetAllAlumni()
   const { mutate: seed, isPending: seeding } = useSeedAlumni(adminId)
+
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [search, setSearch] = useState('')
+  const [filters, setFilters] = useState<FilterValues>({ skill: '' })
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -39,21 +41,21 @@ export const AlumniList = () => {
     e.target.value = ''
   }
 
-  const filtered = (alumni ?? []).filter((a) => {
-    const q = search.toLowerCase()
-    return (
-      a.name.toLowerCase().includes(q) ||
-      a.roll_no.toLowerCase().includes(q) ||
-      a.branch.toLowerCase().includes(q) ||
-      a.email.toLowerCase().includes(q) ||
-      a.current_company.toLowerCase().includes(q) ||
-      a.current_position.toLowerCase().includes(q)
-    )
+  const q = search.trim().toLowerCase()
+  const skill = filters.skill.trim().toLowerCase()
+  const alumniList = (alumni ?? []).filter((a) => {
+    const matchesSearch = [a.name, a.roll_no, a.branch, a.email, a.current_company, a.current_position]
+      .some((value) => value?.toLowerCase().includes(q))
+
+    return matchesSearch &&
+      (filters.batch_year === undefined || Number(a.batch_year) === filters.batch_year) &&
+      (filters.cgpa === undefined || Number(a.cgpa) > filters.cgpa) &&
+      (!skill || a.skills.some((value) => value.trim().toLowerCase() === skill))
   })
 
   return (
     <div className="flex h-screen bg-[#fbfaf6]">
-      <Sidebar role="admin" id={adminId} userName={userName} />
+      <Sidebar role="admin" id={adminId} userEmail={userEmail} />
 
       <main className="flex-1 flex flex-col overflow-hidden px-6 py-8 sm:px-10">
         {/* Header */}
@@ -61,7 +63,7 @@ export const AlumniList = () => {
           <div>
             <h1 className="text-2xl font-semibold text-[#23392f]">Alumni</h1>
             <p className="mt-0.5 text-sm text-[#66746a]">
-              {isLoading ? 'Loading…' : `${filtered.length} alumn${filtered.length !== 1 ? 'i' : 'us'} found`}
+              {isLoading ? 'Loading…' : `${alumniList.length} alumn${alumniList.length !== 1 ? 'i' : 'us'} found`}
             </p>
           </div>
 
@@ -89,6 +91,8 @@ export const AlumniList = () => {
             {seeding ? 'Seeding…' : 'Seed JSON data'}
           </button>
         </div>
+
+        <Filters search={setFilters} />
 
         {/* Table container */}
         <div className="flex-1 overflow-auto rounded-2xl border border-[#e3eadf] bg-white shadow-[0_4px_16px_rgba(23,61,45,0.05)]">
@@ -122,14 +126,14 @@ export const AlumniList = () => {
               </thead>
 
               <tbody className="divide-y divide-[#f0f4ec]">
-                {filtered.length === 0 ? (
+                {alumniList.length === 0 ? (
                   <tr>
                     <td colSpan={9} className="py-16 text-center text-[#97a398]">
                       No alumni match your search.
                     </td>
                   </tr>
                 ) : (
-                  filtered.map((alum, i) => (
+                  alumniList.map((alum, i) => (
                     <tr key={alum.roll_no ?? i} className="transition hover:bg-[#f7faf5]">
 
                       <td className="px-5 py-3.5">

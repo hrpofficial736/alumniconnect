@@ -1,26 +1,57 @@
 import type { Student } from "../types/types";
 import { apiClient } from "./client";
 
-export function getAllStudents(token: string) {
-  return apiClient<Student[]>("students", "GET", token, undefined);
+export function getAllStudents() {
+  return apiClient<Student[]>("students", "GET", null, undefined);
 }
 
-export function getStudentByID(token: string, id: string) {
-  return apiClient<Student>(`students/${id}`, "GET", token, undefined);
+export function getStudentByID(id: string) {
+  return apiClient<Omit<Student, "password">>(
+    `students/${id}`,
+    "GET",
+    null,
+    undefined,
+  );
 }
 
-export function createStudent(token: string, data: Student) {
-  return apiClient<Student>("students", "POST", token, data);
+export function getStudentProfile(id: string) {
+  return apiClient<Omit<Student, "password">>(
+    `students/${id}/profile`,
+    "GET",
+    null,
+  );
 }
 
-export function updateStudent(token: string, data: Student, id: string) {
-  return apiClient<Student>(`students/${id}`, "PATCH", token, data);
+export function updateStudent(data: Omit<Student, "password">, id: string) {
+  return apiClient<Omit<Student, "password">>(
+    `students/${id}`,
+    "PATCH",
+    null,
+    data,
+  );
 }
 
-export function seedStudents(token: string, adminId: string, data: Student[]) {
-  return apiClient<{ message: string }>(`admin/${adminId}/seed/students`, "POST", token, data);
+export function updateStudentProfile(
+  data: Omit<Student, "password">,
+  id: string,
+) {
+  return apiClient<Omit<Student, "password">>(
+    `students/${id}/profile`,
+    "PATCH",
+    null,
+    data,
+  );
 }
 
-export function deleteStudent(token: string, id: string) {
-  return apiClient<void>(`students/${id}`, "DELETE", token, undefined);
+export function seedStudents(adminId: string, data: Student[]) {
+  return apiClient<{ message: string }>(
+    `admin/${adminId}/seed/students`,
+    "POST",
+    null,
+    data,
+  );
+}
+
+export function deleteStudent(id: string) {
+  return apiClient<void>(`students/${id}`, "DELETE", null, undefined);
 }

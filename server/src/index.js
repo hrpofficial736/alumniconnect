@@ -38,7 +38,6 @@ const setupServer = async () => {
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
   app.use("/api", router);
-  
 
   app.listen(PORT, () => {
     console.log(`server is listening at ${PORT}`);

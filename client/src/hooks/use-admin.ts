@@ -1,45 +1,22 @@
-import { useAuth } from "@clerk/react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createAdmin, deleteAdmin, getAdminByID, updateAdmin } from "../api/admin";
+import { deleteAdmin, getAdminByID, updateAdmin, updateStudents } from "../api/admin";
 import type { Admin } from "../types/types";
 
 export function useGetAdminByID(id: string) {
-  const { getToken } = useAuth();
-
   return useQuery({
     queryKey: ["admin"],
     queryFn: async () => {
-      const token = await getToken();
-      return getAdminByID(token!, id);
-    }
-  })
-}
-
-export function useCreateAdmin(data: Admin) {
-  const { getToken } = useAuth();
-
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async () => {
-      const token = await getToken();
-      return createAdmin(token!, data)
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin"] })
+      return getAdminByID(id);
     }
   })
 }
 
 export function useUpdateAdmin(data: Admin, id: string) {
-  const { getToken } = useAuth();
-
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async () => {
-      const token = await getToken();
-      return updateAdmin(token!, data, id)
+      return updateAdmin(data, id)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin"] })
@@ -48,14 +25,24 @@ export function useUpdateAdmin(data: Admin, id: string) {
 }
 
 export function useDeleteAdmin(id: string) {
-  const { getToken } = useAuth();
-
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async () => {
-      const token = await getToken();
-      return deleteAdmin(token!, id)
+      return deleteAdmin(id)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin"] })
+    }
+  })
+}
+
+export function useUpdateStudents(id: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => {
+      return updateStudents(id)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin"] })

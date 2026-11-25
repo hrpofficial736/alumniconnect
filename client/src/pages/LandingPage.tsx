@@ -1,5 +1,6 @@
 
-import { Link } from 'react-router'
+import { useEffect } from 'react'
+import { Link, useNavigate } from 'react-router'
 
 const featureList = [
   {
@@ -159,6 +160,21 @@ function SectionLabel({ children }: { children: string }) {
 }
 
 export const LandingPage = () => {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const redirect = () => {
+      if (localStorage.getItem('user')) {
+        navigate(
+          `/dashboard/${JSON.parse(localStorage.getItem('user')).role}/${JSON.parse(localStorage.getItem('user')).id}`,
+          { replace: true }
+        );
+        return null;
+      }
+    }
+
+    redirect()
+  }, [])
   return (
     <main className="min-h-screen bg-[#FFFFFF] text-[#23392F]">
       <div className="mx-auto flex min-h-screen w-full max-w-[1440px] flex-col overflow-hidden">

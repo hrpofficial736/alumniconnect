@@ -1,10 +1,7 @@
 import { Pool } from "pg";
 
-
-
 export class Database {
   constructor(dbUrl) {
-    
     if (!dbUrl) return;
     this.pool = new Pool({
       connectionString: dbUrl,
