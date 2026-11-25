@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { FaExternalLinkAlt, FaSearch } from "react-icons/fa";
+import { FaExternalLinkAlt, FaSearch, FaTrash } from "react-icons/fa";
 import { useParams } from "react-router";
 import { Sidebar } from "../../components/Sidebar";
-import { useGetAllMentors } from "../../hooks/use-mentorship";
+import { useGetAllMentors, useRemoveMentor } from "../../hooks/use-mentorship";
 
 export default function Mentors() {
   const user = JSON.parse(localStorage.getItem("user") ?? "{}");
@@ -15,6 +15,9 @@ export default function Mentors() {
     refetch,
   } = useGetAllMentors(studentId);
   const [search, setSearch] = useState("");
+  const [actionError, setActionError] = useState("");
+  const [removingMentorId, setRemovingMentorId] = useState<string | null>(null);
+  const removeMentor = useRemoveMentor();
   const query = search.trim().toLowerCase();
   const filteredMentors = mentors.filter((mentor) =>
     [
@@ -24,6 +27,23 @@ export default function Mentors() {
       mentor.current_position,
     ].some((value) => value?.toLowerCase().includes(query)),
   );
+
+  const disconnectMentor = async (alumId: string, name: string) => {
+    if (!window.confirm(`Remove ${name} as your mentor?`)) return;
+    setActionError("");
+    setRemovingMentorId(alumId);
+    try {
+      await removeMentor.mutateAsync({ studentId, alumId });
+    } catch (error) {
+      setActionError(
+        error instanceof Error
+          ? error.message
+          : "Unable to remove this mentor.",
+      );
+    } finally {
+      setRemovingMentorId(null);
+    }
+  };
 
   return (
     <div className="flex h-screen bg-[#fbfaf6]">
@@ -55,6 +75,14 @@ export default function Mentors() {
             />
           </label>
         </header>
+        {actionError && (
+          <p
+            role="alert"
+            className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700"
+          >
+            {actionError}
+          </p>
+        )}
 
         <section className="min-h-0 flex-1 overflow-auto">
           {isLoading ? (
@@ -145,35 +173,51 @@ export default function Mentors() {
                       )}
                     </div>
                   )}
-                  <div className="mt-5 flex gap-4 border-t border-[#f0f4ec] pt-4">
-                    {mentor.linkedin_link && (
-                      <a
-                        href={mentor.linkedin_link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-1 text-xs font-medium text-[#24543f] hover:underline"
-                      >
-                        LinkedIn{" "}
-                        <FaExternalLinkAlt
-                          aria-hidden="true"
-                          className="text-[10px]"
-                        />
-                      </a>
-                    )}
-                    {mentor.portfolio_link && (
-                      <a
-                        href={mentor.portfolio_link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-1 text-xs font-medium text-[#24543f] hover:underline"
-                      >
-                        Portfolio{" "}
-                        <FaExternalLinkAlt
-                          aria-hidden="true"
-                          className="text-[10px]"
-                        />
-                      </a>
-                    )}
+                  <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-[#f0f4ec] pt-4">
+                    <div className="flex flex-wrap gap-4">
+                      {mentor.linkedin_link && (
+                        <a
+                          href={mentor.linkedin_link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1 text-xs font-medium text-[#24543f] hover:underline"
+                        >
+                          LinkedIn{" "}
+                          <FaExternalLinkAlt
+                            aria-hidden="true"
+                            className="text-[10px]"
+                          />
+                        </a>
+                      )}
+                      {mentor.portfolio_link && (
+                        <a
+                          href={mentor.portfolio_link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1 text-xs font-medium text-[#24543f] hover:underline"
+                        >
+                          Portfolio{" "}
+                          <FaExternalLinkAlt
+                            aria-hidden="true"
+                            className="text-[10px]"
+                          />
+                        </a>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      disabled={!mentor.id || removingMentorId === mentor.id}
+                      onClick={() =>
+                        mentor.id &&
+                        void disconnectMentor(mentor.id, mentor.name)
+                      }
+                      className="flex items-center gap-1.5 rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <FaTrash aria-hidden="true" />
+                      {removingMentorId === mentor.id
+                        ? "Removing…"
+                        : "Remove mentor"}
+                    </button>
                   </div>
                 </article>
               ))}

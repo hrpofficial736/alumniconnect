@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   acceptRequest,
+  deleteRejectedRequest,
   getAllMentors,
   getAllRequests,
   getConnectedStudents,
@@ -9,6 +10,7 @@ import {
   removeMentor,
   sendMentorshipMail,
   sendRequest,
+  withdrawStudentRequest,
   type SendMentorshipMail,
   type SendMentorshipRequest,
 } from "../api/mentorship";
@@ -45,6 +47,42 @@ export function useGetStudentRequests(id: string) {
     enabled: !!id,
     refetchInterval: 5000,
     queryFn: () => getStudentRequests(id),
+  });
+}
+
+export function useWithdrawStudentRequest() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      requestId,
+      studentId,
+    }: {
+      requestId: string;
+      studentId: string;
+    }) => withdrawStudentRequest(requestId, studentId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["mentorship-requests", "student"],
+      });
+    },
+  });
+}
+
+export function useDeleteRejectedRequest() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      requestId,
+      studentId,
+    }: {
+      requestId: string;
+      studentId: string;
+    }) => deleteRejectedRequest(requestId, studentId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["mentorship-requests", "student"],
+      });
+    },
   });
 }
 

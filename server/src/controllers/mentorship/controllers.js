@@ -1,5 +1,5 @@
 import { Database } from "../../db/setup.js";
-import { Resend } from "resend";
+import nodemailer from "nodemailer";
 import { marked } from "marked";
 import sanitizeHtml from "sanitize-html";
 
@@ -43,7 +43,8 @@ const getRequests = async (req, res) => {
       mentorship_requests.description, mentorship_requests.status
        FROM mentorship_requests
        JOIN students ON students.id = mentorship_requests.student_id
-       WHERE mentorship_requests.alum_id = $1 ORDER BY mentorship_requests.id DESC`,
+       WHERE mentorship_requests.alum_id = $1 AND mentorship_requests.status = 'pending'
+       ORDER BY mentorship_requests.id DESC`,
       [req.params.id],
     );
     console.log("result is", result);
@@ -81,7 +82,7 @@ const acceptRequest = async (req, res) => {
   try {
     await client.query("BEGIN");
     const { rows } = await client.query(
-      "SELECT student_id, alum_id, tags FROM mentorship_requests WHERE id = $1 FOR UPDATE",
+      "SELECT student_id, alum_id, tags, description FROM mentorship_requests WHERE id = $1 AND status = 'pending' FOR UPDATE",
       [req.params.id],
     );
     if (!rows[0]) {
@@ -89,8 +90,13 @@ const acceptRequest = async (req, res) => {
       return res.status(404).json({ message: "Request not found" });
     }
     await client.query(
-      "INSERT INTO mentorship (student_id, alum_id, tags) VALUES ($1, $2, $3)",
-      [rows[0].student_id, rows[0].alum_id, rows[0].tags ?? []],
+      "INSERT INTO mentorship (student_id, alum_id, tags, description) VALUES ($1, $2, $3, $4)",
+      [
+        rows[0].student_id,
+        rows[0].alum_id,
+        rows[0].tags ?? [],
+        rows[0].description ?? "",
+      ],
     );
     await client.query("DELETE FROM mentorship_requests WHERE id = $1", [
       req.params.id,
@@ -111,15 +117,51 @@ const rejectRequest = async (req, res) => {
   const db = new Database(process.env.DATABASE_URL);
   try {
     const result = await db.query(
-      "DELETE FROM mentorship_requests WHERE id = $1 RETURNING id",
+      "UPDATE mentorship_requests SET status = 'rejected' WHERE id = $1 AND status = 'pending' RETURNING id",
       [req.params.id],
     );
     if (!result.length)
-      return res.status(404).json({ message: "Request not found" });
+      return res.status(404).json({ message: "Pending request not found" });
     res.status(200).json({ message: "Request rejected" });
   } catch (error) {
     console.error("Error rejecting mentorship request:", error);
     res.status(500).json({ message: "Error rejecting request" });
+  } finally {
+    await db.close();
+  }
+};
+
+const withdrawStudentRequest = async (req, res) => {
+  const db = new Database(process.env.DATABASE_URL);
+  try {
+    const result = await db.query(
+      "DELETE FROM mentorship_requests WHERE id = $1 AND student_id = $2 AND status = 'pending' RETURNING id",
+      [req.params.id, req.body.studentId],
+    );
+    if (!result.length)
+      return res.status(404).json({ message: "Pending request not found" });
+    res.status(200).json({ message: "Request withdrawn" });
+  } catch (error) {
+    console.error("Error withdrawing mentorship request:", error);
+    res.status(500).json({ message: "Unable to withdraw request" });
+  } finally {
+    await db.close();
+  }
+};
+
+const deleteRejectedRequest = async (req, res) => {
+  const db = new Database(process.env.DATABASE_URL);
+  try {
+    const result = await db.query(
+      "DELETE FROM mentorship_requests WHERE id = $1 AND student_id = $2 AND status = 'rejected' RETURNING id",
+      [req.params.id, req.body.studentId],
+    );
+    if (!result.length)
+      return res.status(404).json({ message: "Rejected request not found" });
+    res.status(200).json({ message: "Rejected request deleted" });
+  } catch (error) {
+    console.error("Error deleting rejected mentorship request:", error);
+    res.status(500).json({ message: "Unable to delete rejected request" });
   } finally {
     await db.close();
   }
@@ -145,7 +187,15 @@ const getConnectedStudents = async (req, res) => {
   const db = new Database(process.env.DATABASE_URL);
   try {
     const result = await db.query(
-      "SELECT students.* FROM mentorship JOIN students ON students.id = mentorship.student_id WHERE mentorship.alum_id = $1",
+      `SELECT students.id, students.name, students.bio, students.age, students.gender,
+              students.semester, students.cgpa, students.college, students.roll_no,
+              students.email, students.branch, students.batch_year, students.phone,
+              students.skills, students.portfolio_link, students.linkedin_link,
+              COALESCE(mentorship.tags::text[], ARRAY[]::text[]) AS tags,
+              COALESCE(mentorship.description, '') AS description
+       FROM mentorship
+       JOIN students ON students.id = mentorship.student_id
+       WHERE mentorship.alum_id = $1`,
       [req.params.id],
     );
     res.status(200).json(result);
@@ -161,12 +211,22 @@ const mailTags = new Set(["placements", "higher_studies", "general"]);
 
 const sendMentorshipMail = async (req, res) => {
   const alumniId = req.params.id;
-  const { tags, subject, body } = req.body ?? {};
+  const { tags, studentIds, subject, body } = req.body ?? {};
+  const hasTags = tags !== undefined;
+  const hasStudentIds = studentIds !== undefined;
+  const validTags =
+    Array.isArray(tags) &&
+    tags.length > 0 &&
+    tags.every((tag) => typeof tag === "string" && mailTags.has(tag));
+  const validStudentIds =
+    Array.isArray(studentIds) &&
+    studentIds.length > 0 &&
+    studentIds.every((id) => typeof id === "string" && id.trim().length > 0);
 
   if (
-    !Array.isArray(tags) ||
-    tags.length === 0 ||
-    tags.some((tag) => typeof tag !== "string" || !mailTags.has(tag)) ||
+    hasTags === hasStudentIds ||
+    (hasTags && !validTags) ||
+    (hasStudentIds && !validStudentIds) ||
     typeof subject !== "string" ||
     !subject.trim() ||
     subject.length > 180 ||
@@ -176,11 +236,21 @@ const sendMentorshipMail = async (req, res) => {
   ) {
     return res.status(400).json({
       message:
-        "Choose valid tags and provide a subject and message (up to 30,000 characters).",
+        "Choose valid tags or recipients and provide a subject and message (up to 30,000 characters).",
     });
   }
 
-  if (!process.env.RESEND_API_KEY || !process.env.RESEND_FROM_EMAIL) {
+  const smtpPort = Number(process.env.SMTP_PORT || 587);
+  const smtpUser = process.env.SMTP_USER;
+  const smtpPassword = process.env.SMTP_PASS;
+  if (
+    !process.env.SMTP_HOST ||
+    !process.env.SMTP_FROM_EMAIL ||
+    !Number.isInteger(smtpPort) ||
+    smtpPort < 1 ||
+    smtpPort > 65535 ||
+    Boolean(smtpUser) !== Boolean(smtpPassword)
+  ) {
     return res.status(503).json({
       message: "Email sending is not configured on the server.",
     });
@@ -196,23 +266,52 @@ const sendMentorshipMail = async (req, res) => {
       return res.status(404).json({ message: "Alumni account not found." });
     }
 
-    const students = await db.query(
-      `SELECT DISTINCT students.id, students.name, students.email
-       FROM mentorship
-       JOIN students ON students.id = mentorship.student_id
-       WHERE mentorship.alum_id = $1
-         AND NULLIF(BTRIM(students.email), '') IS NOT NULL
-         AND COALESCE(to_jsonb(mentorship.tags), '[]'::jsonb) ?| $2::text[]`,
-      [alumniId, [...new Set(tags)]],
-    );
+    let students;
+    if (hasStudentIds) {
+      const uniqueStudentIds = [...new Set(studentIds.map((id) => id.trim()))];
+      students = await db.query(
+        `SELECT DISTINCT students.id, students.name, students.email
+         FROM mentorship
+         JOIN students ON students.id = mentorship.student_id
+         WHERE mentorship.alum_id = $1
+           AND students.id::text = ANY($2::text[])
+           AND NULLIF(BTRIM(students.email), '') IS NOT NULL`,
+        [alumniId, uniqueStudentIds],
+      );
+      if (students.length !== uniqueStudentIds.length) {
+        return res.status(400).json({
+          message:
+            "Some selected students are no longer connected to you or do not have an email address.",
+        });
+      }
+    } else {
+      students = await db.query(
+        `SELECT DISTINCT students.id, students.name, students.email
+         FROM mentorship
+         JOIN students ON students.id = mentorship.student_id
+         WHERE mentorship.alum_id = $1
+           AND NULLIF(BTRIM(students.email), '') IS NOT NULL
+           AND COALESCE(to_jsonb(mentorship.tags), '[]'::jsonb) ?| $2::text[]`,
+        [alumniId, [...new Set(tags)]],
+      );
+    }
 
     if (!students.length) {
       return res.status(404).json({
-        message: "No connected students match the selected tags.",
+        message: hasStudentIds
+          ? "No selected mentees were found."
+          : "No connected students match the selected tags.",
       });
     }
 
-    const resend = new Resend(process.env.RESEND_API_KEY);
+    const mailer = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: smtpPort,
+      secure: process.env.SMTP_SECURE === "true" || smtpPort === 465,
+      ...(smtpUser && smtpPassword
+        ? { auth: { user: smtpUser, pass: smtpPassword } }
+        : {}),
+    });
     const rendered = await marked.parse(body, { gfm: true, breaks: true });
     const safeHtml = sanitizeHtml(rendered);
     let sentCount = 0;
@@ -220,20 +319,16 @@ const sendMentorshipMail = async (req, res) => {
 
     for (const student of students) {
       try {
-        const { error } = await resend.emails.send({
-          from: process.env.RESEND_FROM_EMAIL,
-          to: process.env.RECEIVER_EMAIL,
+        const info = await mailer.sendMail({
+          from: process.env.SMTP_FROM_EMAIL,
+          to: student.email,
           replyTo: alumniRows[0].email || undefined,
           subject: subject.trim().replace(/[\r\n]+/g, " "),
           html: `<main style="font-family:Arial,sans-serif;line-height:1.6;color:#23392f"><p>Hello ${sanitizeHtml(student.name || "there")},</p>${safeHtml}<p>— ${sanitizeHtml(alumniRows[0].name || "Your mentor")}</p></main>`,
           text: `Hello ${student.name || "there"},\n\n${body}\n\n— ${alumniRows[0].name || "Your mentor"}`,
         });
-        if (error) {
-          console.error("Resend failed to deliver mentorship email:", error);
-          failedCount += 1;
-        } else {
-          sentCount += 1;
-        }
+        if (info.rejected?.length) failedCount += 1;
+        else sentCount += 1;
       } catch (error) {
         console.error("Failed to send mentorship email:", error);
         failedCount += 1;
@@ -280,6 +375,8 @@ export {
   getStudentRequests,
   acceptRequest,
   rejectRequest,
+  withdrawStudentRequest,
+  deleteRejectedRequest,
   getAllMentors,
   getConnectedStudents,
   sendMentorshipMail,

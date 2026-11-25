@@ -17,9 +17,9 @@
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "marked": "^18.3.0",
+    "nodemailer": "^10.6.1",
     "nodemon": "^3.1.14",
     "pg": "^8.23.0",
-    "resend": "^6.39.0",
     "sanitize-html": "^2.18.2"
   }
 }

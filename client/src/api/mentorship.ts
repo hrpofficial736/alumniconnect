@@ -14,7 +14,8 @@ export interface SendMentorshipRequest {
 }
 
 export interface SendMentorshipMail {
-  tags: MentorshipTag[];
+  tags?: MentorshipTag[];
+  studentIds?: string[];
   subject: string;
   body: string;
 }
@@ -25,11 +26,16 @@ export interface MentorshipMailResult {
   failedCount: number;
 }
 
+export interface ConnectedStudent extends Omit<Student, "password"> {
+  tags: MentorshipTag[];
+  description: string;
+}
+
 export interface StudentMentorshipRequest extends Alumni {
   request_id: string;
   tags: MentorshipRequest["tags"];
   description: string;
-  status: "pending";
+  status: "pending" | "rejected";
 }
 
 export function getAllMentors(id: string) {
@@ -37,7 +43,11 @@ export function getAllMentors(id: string) {
 }
 
 export function getConnectedStudents(id: string) {
-  return apiClient<Student[]>(`mentorship/students/${id}`, "GET", null);
+  return apiClient<ConnectedStudent[]>(
+    `mentorship/students/${id}`,
+    "GET",
+    null,
+  );
 }
 
 export function getAllRequests(id: string) {
@@ -66,6 +76,24 @@ export function acceptRequest(id: string) {
 
 export function rejectRequest(id: string) {
   return apiClient<void>(`mentorship/requests/${id}/reject`, "PATCH", null);
+}
+
+export function withdrawStudentRequest(requestId: string, studentId: string) {
+  return apiClient<void>(
+    `mentorship/student-requests/${requestId}`,
+    "DELETE",
+    null,
+    { studentId },
+  );
+}
+
+export function deleteRejectedRequest(requestId: string, studentId: string) {
+  return apiClient<void>(
+    `mentorship/student-requests/${requestId}/rejected`,
+    "DELETE",
+    null,
+    { studentId },
+  );
 }
 
 export function sendMentorshipMail(alumniId: string, mail: SendMentorshipMail) {

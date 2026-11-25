@@ -35,6 +35,8 @@ import {
   sendRequest,
   acceptRequest,
   rejectRequest,
+  withdrawStudentRequest,
+  deleteRejectedRequest,
   sendMentorshipMail,
 } from "../controllers/mentorship/controllers.js";
 
@@ -72,6 +74,11 @@ router.delete("/alumni/:id", deleteAlumni);
 router.post("/mentorship/requests", sendRequest);
 router.get("/mentorship/requests/:id", getRequests);
 router.get("/mentorship/student-requests/:id", getStudentRequests);
+router.delete("/mentorship/student-requests/:id", withdrawStudentRequest);
+router.delete(
+  "/mentorship/student-requests/:id/rejected",
+  deleteRejectedRequest,
+);
 router.get("/mentorship/students/:id", getConnectedStudents);
 router.patch("/mentorship/requests/:id/accept", acceptRequest);
 router.patch("/mentorship/requests/:id/reject", rejectRequest);
