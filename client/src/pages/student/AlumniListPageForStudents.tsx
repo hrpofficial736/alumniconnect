@@ -97,7 +97,7 @@ export const AlumniListPageForStudents = () => {
   // insert sidebar
   return (
     <div className="flex h-screen bg-[#fbfaf6]">
-      <Sidebar role="student" id={studentId} userEmail={userEmail} />
+      <Sidebar role="student" id={studentId ?? ""} userEmail={userEmail} />
 
       <main className="flex-1 flex flex-col overflow-hidden px-6 py-8 sm:px-10">
         {/* Header */}

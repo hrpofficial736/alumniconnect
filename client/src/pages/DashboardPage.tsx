@@ -235,7 +235,8 @@ export const DashboardPage = () => {
     );
   }
 
-  const { id, role, email: userEmail } = user;
+  const { id, email: userEmail } = user;
+  const role = user.role as UserRole;
   console.log(id, role, userEmail);
   const { greeting, description } = headings[role];
 

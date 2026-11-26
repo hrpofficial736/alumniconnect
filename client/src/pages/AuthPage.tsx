@@ -50,12 +50,21 @@ export const AuthPage = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (localStorage.getItem('user')) {
-      navigate(`/dashboard/${JSON.parse(localStorage.getItem('user')).role}/${JSON.parse(localStorage.getItem('user')).id}`, { replace: true });
-      return null;
+    const storedUser = localStorage.getItem("user");
+    if (!storedUser) return;
+
+    try {
+      const parsedUser: { role?: string; id?: string } = JSON.parse(storedUser);
+      if (parsedUser.role && parsedUser.id) {
+        navigate(`/dashboard/${parsedUser.role}/${parsedUser.id}`, {
+          replace: true,
+        });
+      }
+    } catch {
+      localStorage.removeItem("user");
     }
-  }, [])
-  
+  }, [navigate]);
+
   const [role, setRole] = useState<UserRole>("student");
   const [mode, setMode] = useState<AuthMode>("login");
   const [email, setEmail] = useState("");
@@ -63,7 +72,6 @@ export const AuthPage = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-
 
   const activeRole = roles.find((r) => r.id === role)!;
 
@@ -86,13 +94,11 @@ export const AuthPage = () => {
   };
 
   const handleAuthSuccess = (id: string) => {
-    navigate(`/dashboard/${activeRole.id}/${id}`, {replace: true});
+    navigate(`/dashboard/${activeRole.id}/${id}`, { replace: true });
   };
 
   const { mutate: login } = useLogin(activeRole.id, handleAuthSuccess);
   const { mutate: register } = useRegister(activeRole.id, handleAuthSuccess);
-
-  
 
   const handleSubmit = async (e: React.SubmitEvent) => {
     console.log("handleSubmit", e);
@@ -259,12 +265,15 @@ export const AuthPage = () => {
                     ? "bg-[#24543f] text-white shadow-sm"
                     : "text-[#66746a]"
                 }`}
-              >Admin
+              >
+                Admin
               </button>
             </div>
 
             {/* Auth mode toggle */}
-            <div className={`mt-4 flex rounded-full bg-[#f0f4ec] p-1 text-sm font-semibold ${role !== "admin" && "hidden"}`}>
+            <div
+              className={`mt-4 flex rounded-full bg-[#f0f4ec] p-1 text-sm font-semibold ${role !== "admin" && "hidden"}`}
+            >
               <button
                 type="button"
                 onClick={() => switchMode("login")}
