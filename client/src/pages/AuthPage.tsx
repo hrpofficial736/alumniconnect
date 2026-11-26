@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import {
-  FaGoogle,
   FaUserGraduate,
   FaBriefcase,
   FaUserShield,
