@@ -309,7 +309,7 @@ export const AuthPage = () => {
             </div>
 
             {/* Google button */}
-            <button
+            {/* <button
               type="button"
               disabled={loading}
               className="mt-5 flex w-full cursor-pointer items-center justify-center gap-3 rounded-2xl border border-[#dce5d8] bg-white px-4 py-3 text-sm font-semibold text-[#23392f] transition hover:bg-[#f8faf6] disabled:opacity-50"
@@ -322,7 +322,7 @@ export const AuthPage = () => {
               <span className="h-px flex-1 bg-[#e6ece0]" />
               <span>or use email</span>
               <span className="h-px flex-1 bg-[#e6ece0]" />
-            </div>
+            </div> */}
 
             {/* Email / password form */}
             <form onSubmit={handleSubmit} className="space-y-4">
